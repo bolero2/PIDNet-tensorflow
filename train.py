@@ -20,10 +20,8 @@ import numpy as np
 
 import tensorflow as tf
 from tensorboardX import SummaryWriter
-
-import _init_paths
 import models
-import datasets
+
 from configs import config
 from configs import update_config
 from utils.criterion import CrossEntropy, OhemCrossEntropy, BondaryLoss
@@ -34,7 +32,7 @@ from datetime import datetime
 import pickle
 from bdataset import DatasetParser
 
-GPUS = tf.config.experimental.list_physical_devices('GPU')
+_GPUS = tf.config.experimental.list_physical_devices('GPU')
 
 
 def parse_args():
