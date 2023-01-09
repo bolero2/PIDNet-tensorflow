@@ -379,10 +379,10 @@ class Bag(tf.Module):
     
 
 
-if __name__ == '__main__':
-    x = tf.random.normal(4, 64, 32, 64)
-    y = tf.random.normal(4, 64, 32, 64)
-    z = tf.random.normal(4, 64, 32, 64)
-    net = PagFM(64, 16, with_channel=True)
+# if __name__ == '__main__':
+#     x = tf.random.normal(4, 64, 32, 64)
+#     y = tf.random.normal(4, 64, 32, 64)
+#     z = tf.random.normal(4, 64, 32, 64)
+#     net = PagFM(64, 16, with_channel=True)
     
-    out = net(x,y)
+#     out = net(x,y)
