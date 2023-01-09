@@ -41,6 +41,62 @@ class PIDNet(tf.Module):
         self.layer4 = self._make_layer(BasicBlock, self.planes * 4, self.planes * 8, n, strides=2)
         self.layer5 = self._make_layer(Bottleneck, self.planes * 8, self.planes * 8, 2, strides=2)
 
+        # P branch
+        self.compression3 = Sequential([
+            Conv2D(self.planes * 2, kernel_size=1, use_bias=False),
+            BatchNorm(momentum=self.bn_mom)
+        ])
+
+        self.compression4 = Sequential([
+            Conv2D(self.planes * 2, kernel_size=1, use_bias=False),
+            BatchNorm(momentum=self.bn_mom)
+        ])
+
+        self.pag3 = PagFM(self.planes * 2, self.planes)
+        self.pag4 = PagFM(self.planes * 2, self.planes)
+
+        self.layer3_ = self._make_layer(BasicBlock, self.planes * 2, self.planes * 2, m)
+        self.layer4_ = self._make_layer(BasicBlock, self.planes * 2, self.planes * 2, m)
+        self.layer5_ = self._make_layer(Bottleneck, self.planes * 2, self.planes * 2, m)
+
+        # D branch
+        if m == 2:
+            self.layer3_d = self._make_single_layer(BasicBlock, self.planes * 2, self.planes)
+            self.layer4_d = self._make_layer(Bottleneck, self.planes, self.planes, 1)
+            self.diff3 = Sequential([
+                Conv2D(self.planes, kernel_size=3, padding='same', use_bias=False),
+                BatchNorm(momentum=self.bn_mom)
+            ])
+            self.diff4 = Sequential([
+                Conv2D(self.planes * 2, kernel_size=3, padding='same', use_bias=False),
+                BatchNorm(momentum=self.bn_mom)
+            ])
+            self.spp = PAPPM(self.planes * 16, self.ppm_planes, self.planes * 4)
+            self.dfm = Light_Bag(self.planes * 4, self.planes * 4)
+
+        else:
+            self.layer3_d = self._make_single_layer(BasicBlock, self.planes * 2, self.planes * 2)
+            self.layer4_d = self._make_single_layer(BasicBlock, self.planes * 2, self.planes * 2)
+            self.diff3 = Sequential([
+                                    Conv2D(self.planes * 2, kernel_size=3, padding='same', use_bias=False),
+                                    BatchNorm(momentum=self.bn_mom),
+                                    ])
+            self.diff4 = Sequential([
+                                    Conv2D(self.planes * 2, kernel_size=3, padding='same', use_bias=False),
+                                    BatchNorm(momentum=self.bn_mom),
+                                    ])
+            self.spp = DAPPM(self.planes * 16, self.ppm_planes, self.planes * 4)
+            self.dfm = Bag(self.planes * 4, self.planes * 4)
+
+        self.layer5_d = self._make_layer(Bottleneck, self.planes * 2, self.planes * 2, 1)
+
+        # Prediction head
+        if self.augment:
+            self.seghead_p = segmenthead(self.planes * 2, self.head_planes, self.num_classes)
+            self.seghead_d = segmenthead(self.planes * 2, self.planes, 1)
+
+        self.final_layer = segmenthead(self.planes * 4, self.head_planes, self.num_classes)
+
     def _make_layer(self, block, inplanes, planes, blocks, strides=1):
         downsample = None
 
