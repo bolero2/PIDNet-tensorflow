@@ -5,8 +5,8 @@ from tensorflow.keras.layers import BatchNormalization as BatchNorm
 import tensorflow.nn as nn
 
 import time
-from .model_utils import BasicBlock, Bottleneck, segmenthead, DAPPM, PAPPM, PagFM, Bag, Light_Bag
 import logging
+from model_utils import BasicBlock, Bottleneck, segmenthead, DAPPM, PAPPM, PagFM, Bag, Light_Bag
 
 
 class PIDNet(tf.Module):
@@ -103,7 +103,7 @@ class PIDNet(tf.Module):
         if strides != 1 or inplanes != planes * block.expansion:
             downsample = Sequential([
                 Conv2D(planes * block.expansion, kernel_size=1, strides=strides, use_bias=False),
-                BatchNorm(mementum=self.bn_mom)
+                BatchNorm(momentum=self.bn_mom)
             ])
 
         layers = []
@@ -137,11 +137,53 @@ class PIDNet(tf.Module):
         x = self.conv1(x)
         x = self.relu(self.layer1(x))
 
+        x = self.relu(self.layer2(x))
+
+        x_ = self.layer3_(x)
+        x_d = self.layer3_d(x)
+
+        x = self.relu(self.layer3(x))
+        x_ = self.pag3(x_, self.compression3(x))
+        x_d = x_d + tf.image.resize(self.diff3(x), size=[height_output, width_output], method='bilinear')
+
+        if self.augment:
+            temp_p = x_
+
+        x = self.relu(self.layer4(x))
+        x_ = self.layer4_(self.relu(x_))
+        x_d = self.layer4_d(self.relu(x_d))
+
+        x_ = self.pag4(x_, self.compression4(x))
+        x_d = x_d + tf.image.resize(self.diff4(x), size=[height_output, width_output], method='bilinear')
+        
+        if self.augment:
+            temp_d = x_d
+
+        x_ = self.layer5_(self.relu(x_))
+        x_d = self.layer5_d(self.relu(x_d))
+
+        x = tf.image.resize(self.spp(self.layer5(x)), size=[height_output, width_output], method='bilinear')
+
+        x = self.final_layer(self.dfm(x_, x, x_d))
+
+        if self.augment:
+            x_extra_p = self.seghead_p(temp_p)
+            x_extra_d = self.seghead_d(temp_d)
+            return [x_extra_p, x_, x_extra_d]
+        else:
+            return x_
+
+        return x
+
 
 if __name__ == "__main__":
-    model = PIDNet()
+    _GPUS = tf.config.experimental.list_physical_devices('GPU')
 
+    model = PIDNet()
+    # with tf.stop_gradient():
     input_shape = (4, 28, 28, 3)
     x = tf.random.normal(input_shape)
+    print(model)
 
     y = model(x)
+    print(y)

@@ -6,6 +6,9 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, ReLU, AveragePooling2D, GlobalAveragePooling2D
 from tensorflow.keras.layers import BatchNormalization as BatchNorm
 
+from tensorflow.python.ops.numpy_ops import np_config
+np_config.enable_numpy_behavior()
+
 
 BN_MOM = 0.1
 ALGC = False
@@ -198,51 +201,55 @@ class PAPPM(tf.Module):
     def __init__(self, inplanes, branch_planes, outplanes):
         super(PAPPM, self).__init__()
         BN_MOM = 0.1
-        self.scale1 = Sequential([AveragePooling2D(pool_size=5, strides=2, padding='same'),
+        self.scale1 = Sequential([
+                                    AveragePooling2D(pool_size=5, strides=2, padding='same'),
                                     BatchNorm(momentum=BN_MOM),
                                     ReLU(),
-                                    Conv2D(inplanes, branch_planes, kernel_size=1, use_bias=False),
-                                    ])
-        self.scale2 = Sequential([AveragePooling2D(pool_size=9, strides=4, padding='same'),
+                                    Conv2D(branch_planes, kernel_size=1, use_bias=False),
+                                ])
+        self.scale2 = Sequential([
+                                    AveragePooling2D(pool_size=9, strides=4, padding='same'),
                                     BatchNorm(momentum=BN_MOM),
                                     ReLU(),
-                                    Conv2D(inplanes, branch_planes, kernel_size=1, use_bias=False),
-                                    ])
-        self.scale3 = Sequential([AveragePooling2D(pool_size=17, strides=8, padding='same'),
+                                    Conv2D(branch_planes, kernel_size=1, use_bias=False),
+                                ])
+        self.scale3 = Sequential([
+                                    AveragePooling2D(pool_size=17, strides=8, padding='same'),
                                     BatchNorm(momentum=BN_MOM),
                                     ReLU(),
-                                    Conv2D(inplanes, branch_planes, kernel_size=1, use_bias=False),
-                                    ])
-        self.scale4 = Sequential([GlobalAveragePooling2D(),
+                                    Conv2D(branch_planes, kernel_size=1, use_bias=False),
+                                ])
+        self.scale4 = Sequential([
+                                    GlobalAveragePooling2D(),
                                     BatchNorm(momentum=BN_MOM),
                                     ReLU(),
-                                    Conv2D(inplanes, branch_planes, kernel_size=1, use_bias=False),
-                                    ])
+                                    Conv2D(branch_planes, kernel_size=1, use_bias=False)
+                                ])
 
         self.scale0 = Sequential([
                                     BatchNorm(momentum=BN_MOM),
                                     ReLU(),
-                                    Conv2D(inplanes, branch_planes, kernel_size=1, use_bias=False),
-                                    ])
+                                    Conv2D(branch_planes, kernel_size=1, use_bias=False),
+                                ])
         
         self.scale_process = Sequential([
-                                    BatchNorm(branch_planes*4, momentum=BN_MOM),
-                                    ReLU(),
-                                    Conv2D(branch_planes*4, branch_planes*4, kernel_size=3, padding='same', groups=4, use_bias=False),
-                                    ])
+                                            BatchNorm(momentum=BN_MOM),
+                                            ReLU(),
+                                            Conv2D(branch_planes*4, kernel_size=3, padding='same', groups=4, use_bias=False),
+                                        ])
 
       
-        self.compression = Sequential(
-                                    [BatchNorm(momentum=BN_MOM),
-                                    ReLU(),
-                                    Conv2D(branch_planes * 5, outplanes, kernel_size=1, use_bias=False),]
-                                    )
+        self.compression = Sequential([
+                                        BatchNorm(momentum=BN_MOM),
+                                        ReLU(),
+                                        Conv2D(outplanes, kernel_size=1, use_bias=False),
+                                    ])
         
-        self.shortcut = Sequential(
-                                    [BatchNorm(momentum=BN_MOM),
+        self.shortcut = Sequential([
+                                    BatchNorm(momentum=BN_MOM),
                                     ReLU(),
-                                    Conv2D(inplanes, outplanes, kernel_size=1, use_bias=False),]
-                                    )
+                                    Conv2D(outplanes, kernel_size=1, use_bias=False),
+                                ])
 
 
     def __call__(self, x):
@@ -271,27 +278,26 @@ class PagFM(tf.Module):
         super(PagFM, self).__init__()
         self.with_channel = with_channel
         self.after_relu = after_relu
-        self.f_x = Sequential(
-                                [Conv2D(in_channels, mid_channels, 
-                                          kernel_size=1, use_bias=False),
-                                BatchNorm()]
-                                )
-        self.f_y = Sequential(
-                                [Conv2D(in_channels, mid_channels, 
-                                          kernel_size=1, use_bias=False),
-                                BatchNorm()]
-                                )
+        self.f_x = Sequential([
+                                Conv2D(mid_channels, kernel_size=1, use_bias=False),
+                                BatchNorm()
+                            ])
+        self.f_y = Sequential([
+                                Conv2D(mid_channels, kernel_size=1, use_bias=False),
+                                BatchNorm()
+                            ])
         if with_channel:
-            self.up = Sequential(
-                                    [Conv2D(mid_channels, in_channels, 
-                                              kernel_size=1, use_bias=False),
-                                    BatchNorm()]
-                                   )
+            self.up = Sequential([
+                                    Conv2D(in_channels, kernel_size=1, use_bias=False),
+                                    BatchNorm()
+                                ])
         if after_relu:
             self.relu = ReLU()
         
     def __call__(self, x, y):
-        input_size = x.size()
+        print(x.shape)
+        input_size = x.shape
+
         if self.after_relu:
             y = self.relu(y)
             x = self.relu(x)
@@ -316,14 +322,12 @@ class Light_Bag(tf.Module):
     def __init__(self, in_channels, out_channels):
         super(Light_Bag, self).__init__()
         self.conv_p = Sequential([
-                                Conv2D(in_channels, out_channels, 
-                                          kernel_size=1, use_bias=False),
-                                BatchNorm()
+                                    Conv2D(out_channels, kernel_size=1, use_bias=False),
+                                    BatchNorm()
                                 ])
         self.conv_i = Sequential([
-                                Conv2D(in_channels, out_channels, 
-                                          kernel_size=1, use_bias=False),
-                                BatchNorm()
+                                    Conv2D(out_channels, kernel_size=1, use_bias=False),
+                                    BatchNorm()
                                 ])
         
     def __call__(self, p, i, d):
@@ -339,18 +343,16 @@ class DDFMv2(tf.Module):
     def __init__(self, in_channels, out_channels):
         super(DDFMv2, self).__init__()
         self.conv_p = Sequential([
-                                BatchNorm(),
-                                ReLU(),
-                                Conv2D(in_channels, out_channels, 
-                                          kernel_size=1, use_bias=False),
-                                BatchNorm()
+                                    BatchNorm(),
+                                    ReLU(),
+                                    Conv2D(out_channels, kernel_size=1, use_bias=False),
+                                    BatchNorm()
                                 ])
         self.conv_i = Sequential([
-                                BatchNorm(in_channels),
-                                ReLU(),
-                                Conv2D(in_channels, out_channels, 
-                                          kernel_size=1, use_bias=False),
-                                BatchNorm()
+                                    BatchNorm(),
+                                    ReLU(),
+                                    Conv2D(out_channels, kernel_size=1, use_bias=False),
+                                    BatchNorm()
                                 ])
         
     def __call__(self, p, i, d):
