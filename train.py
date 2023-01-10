@@ -145,7 +145,8 @@ def main():
                                 base_size=config.TRAIN.BASE_SIZE,
                                 crop_size=crop_size,
                                 reshape_size=reshape_size,
-                                scale_factor=config.TRAIN.SCALE_FACTOR)
+                                scale_factor=config.TRAIN.SCALE_FACTOR,
+                                mode='train')
 
     valid_crop_size = (config.TEST.IMAGE_SIZE[1], config.TEST.IMAGE_SIZE[0])
     valid_reshape_size = (config.TEST.IMAGE_SIZE[0], config.TEST.IMAGE_SIZE[1])
@@ -157,7 +158,8 @@ def main():
                                 ignore_label=config.TRAIN.IGNORE_LABEL,
                                 base_size=config.TRAIN.BASE_SIZE,
                                 crop_size=valid_crop_size,
-                                reshape_size=valid_reshape_size)
+                                reshape_size=valid_reshape_size,
+                                mode='valid')
 
     # if config.TRAIN.OPTIMIZER.lower() == 'sgd':
 
