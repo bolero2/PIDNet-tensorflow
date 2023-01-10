@@ -266,9 +266,9 @@ class PAPPM(tf.Module):
                         method='bilinear') + x_)
         scale_list.append(tf.image.resize(self.scale4(x), size=[height, width],
                         method='bilinear') + x_)
-        scale_out = self.scale_process(tf.concat(scale_list, 1))
+        scale_out = self.scale_process(tf.concat(scale_list, 3))
        
-        out = self.compression(tf.concat([x_,scale_out], 1)) + self.shortcut(x)
+        out = self.compression(tf.concat([x_, scale_out], 3)) + self.shortcut(x)
         return out
     
 

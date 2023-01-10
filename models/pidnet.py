@@ -173,17 +173,15 @@ class PIDNet(tf.Module):
         else:
             return x_
 
-        return x
-
 
 if __name__ == "__main__":
     _GPUS = tf.config.experimental.list_physical_devices('GPU')
 
-    model = PIDNet()
+    model = PIDNet(augment=False, num_classes=19)
     # with tf.stop_gradient():
-    input_shape = (4, 1024, 2048, 3)
+    input_shape = (1, 1024, 2048, 3)
     x = tf.random.normal(input_shape)
     print(model)
 
     y = model(x)
-    print(y)
+    print(y.shape)
