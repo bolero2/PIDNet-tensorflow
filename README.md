@@ -18,8 +18,11 @@ Especially, PIDNet-S achieves 78.6% mIOU with inference speed of 93.2 FPS on Cit
 
 ## Images 
 
+### Model Architecture
 <img width="1221" alt="image" src="https://user-images.githubusercontent.com/41134624/211530339-be479edd-276d-4ebd-960c-950dfe8b51ab.png">
 
+### Feature Visualization
 <img width="1221" alt="image" src="https://user-images.githubusercontent.com/41134624/211530539-75dfbb42-8e17-4ac7-82b4-386391d998d5.png">
 
+### Segmentation performance of PIDNets on Cityscapes Val set.
 <img width="1212" alt="image" src="https://user-images.githubusercontent.com/41134624/211530609-17588334-d1b5-448b-aa4b-3351335531aa.png">
