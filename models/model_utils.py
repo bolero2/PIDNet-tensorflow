@@ -220,7 +220,7 @@ class PAPPM(tf.Module):
                                     Conv2D(branch_planes, kernel_size=1, use_bias=False),
                                 ])
         self.scale4 = Sequential([
-                                    GlobalAveragePooling2D(),
+                                    GlobalAveragePooling2D(keepdims=True),
                                     BatchNorm(momentum=BN_MOM),
                                     ReLU(),
                                     Conv2D(branch_planes, kernel_size=1, use_bias=False)
@@ -235,7 +235,7 @@ class PAPPM(tf.Module):
         self.scale_process = Sequential([
                                             BatchNorm(momentum=BN_MOM),
                                             ReLU(),
-                                            Conv2D(branch_planes*4, kernel_size=3, padding='same', groups=4, use_bias=False),
+                                            Conv2D(branch_planes * 4, kernel_size=3, padding='same', groups=4, use_bias=False),
                                         ])
 
       
@@ -266,7 +266,6 @@ class PAPPM(tf.Module):
                         method='bilinear') + x_)
         scale_list.append(tf.image.resize(self.scale4(x), size=[height, width],
                         method='bilinear') + x_)
-        
         scale_out = self.scale_process(tf.concat(scale_list, 1))
        
         out = self.compression(tf.concat([x_,scale_out], 1)) + self.shortcut(x)
