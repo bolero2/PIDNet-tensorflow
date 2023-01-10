@@ -6,7 +6,7 @@ import tensorflow.nn as nn
 
 import time
 import logging
-from model_utils import BasicBlock, Bottleneck, segmenthead, DAPPM, PAPPM, PagFM, Bag, Light_Bag
+from .model_utils import BasicBlock, Bottleneck, segmenthead, DAPPM, PAPPM, PagFM, Bag, Light_Bag
 
 
 class PIDNet(tf.Module):
@@ -186,6 +186,59 @@ class PIDNet(tf.Module):
         else:
             return x_
 
+def get_seg_model(cfg, pretrained=""):
+    print(f"\n >>> Model name : {cfg.MODEL.NAME}")
+
+    model_name = cfg.MODEL.NAME.lower().replace("-", "_")
+    if 'pidnet_s' in model_name:
+        print("\n >>> Load PIDNet-Small model")
+        model = PIDNet(m=2, n=3, num_classes=cfg.DATASET.NUM_CLASSES, planes=32, ppm_planes=96, head_planes=128, augment=True) 
+    elif 'pidnet_m' in model_name:
+        print("\n >>> Load PIDNet-Medium model")
+        model = PIDNet(m=2, n=3, num_classes=cfg.DATASET.NUM_CLASSES, planes=64, ppm_planes=96, head_planes=128, augment=True)
+    elif 'pidnet_l' in model_name:
+        print("\n >>> Load PIDNet-Large model")
+        model = PIDNet(m=3, n=4, num_classes=cfg.DATASET.NUM_CLASSES, planes=64, ppm_planes=112, head_planes=256, augment=True)
+    else:
+        print(f"\n >>> {model_name} is not supported.")
+        raise NotImplementedError
+    
+    if cfg.MODEL.PRETRAINED != "":
+        print(f"Load pretrained weight : {cfg.MODEL.PRETRAINED}")
+        pretrained_dict = tf.keras.models.load_model(cfg.MODEL.PRETRAINED)
+
+        model_dict = model.state_dict()
+        pretrained_dict = {k[6:]: v for k, v in pretrained_dict.items() if (k[6:] in model_dict and v.shape == model_dict[k[6:]].shape)}
+        msg = 'Loaded {} parameters!'.format(len(pretrained_dict))
+        logging.info('Attention!!!')
+        logging.info(msg)
+        logging.info('Over!!!')
+        model_dict.update(pretrained_dict)
+        model.load_state_dict(model_dict, strict = False)
+    else:
+        pass
+    
+    return model
+
+def get_pred_model(name, num_classes):
+    model_name = name.lower().replace("-", "_")
+
+    print(f"\n >>> Model name : {name}")
+
+    if 'pidnet_s' in model_name:
+        print("\n >>> Load PIDNet-Small model")
+        model = PIDNet(m=2, n=3, num_classes=num_classes, planes=32, ppm_planes=96, head_planes=128, augment=False)
+    elif 'pidnet_m' in model_name:
+        print("\n >>> Load PIDNet-Medium model")
+        model = PIDNet(m=2, n=3, num_classes=num_classes, planes=64, ppm_planes=96, head_planes=128, augment=False)
+    elif 'pidnet_l' in model_name:
+        print("\n >>> Load PIDNet-Large model")
+        model = PIDNet(m=3, n=4, num_classes=num_classes, planes=64, ppm_planes=112, head_planes=256, augment=False)
+    else:
+        print(f"\n >>> {model_name} is not supported.")
+        raise NotImplementedError
+    
+    return model
 
 if __name__ == "__main__":
     _GPUS = tf.config.experimental.list_physical_devices('GPU')
