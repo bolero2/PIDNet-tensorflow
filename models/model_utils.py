@@ -108,8 +108,8 @@ class segmenthead(tf.Module):
         out = self.conv2(self.relu(self.bn2(x)))
 
         if self.scale_factor is not None:
-            height = x.shape[-2] * self.scale_factor
-            width = x.shape[-1] * self.scale_factor
+            width = x.shape[-2] * self.scale_factor
+            height = x.shape[-3] * self.scale_factor
 
             out = tf.image.resize(out, size=[height, width], method='bilinear')
 
@@ -176,8 +176,8 @@ class DAPPM(tf.Module):
                                     ])
 
     def __call__(self, x):
-        width = x.shape[-1]
-        height = x.shape[-2]        
+        width = x.shape[-2]
+        height = x.shape[-3]        
         x_list = []
 
         x_list.append(self.scale0(x))
@@ -253,19 +253,19 @@ class PAPPM(tf.Module):
 
 
     def __call__(self, x):
-        width = x.shape[-1]
-        height = x.shape[-2]        
+        width = x.shape[-2]
+        height = x.shape[-3]        
         scale_list = []
 
         x_ = self.scale0(x)
         scale_list.append(tf.image.resize(self.scale1(x), size=[height, width],
-                        method='bilinear')+x_)
+                        method='bilinear') + x_)
         scale_list.append(tf.image.resize(self.scale2(x), size=[height, width],
-                        method='bilinear')+x_)
+                        method='bilinear') + x_)
         scale_list.append(tf.image.resize(self.scale3(x), size=[height, width],
-                        method='bilinear')+x_)
+                        method='bilinear') + x_)
         scale_list.append(tf.image.resize(self.scale4(x), size=[height, width],
-                        method='bilinear')+x_)
+                        method='bilinear') + x_)
         
         scale_out = self.scale_process(tf.concat(scale_list, 1))
        
@@ -295,26 +295,26 @@ class PagFM(tf.Module):
             self.relu = ReLU()
         
     def __call__(self, x, y):
-        print(x.shape)
         input_size = x.shape
 
         if self.after_relu:
             y = self.relu(y)
             x = self.relu(x)
-        
+
         y_q = self.f_y(y)
-        y_q = tf.image.resize(y_q, size=[input_size[2], input_size[3]],
+        y_q = tf.image.resize(y_q, size=[input_size[1], input_size[2]],
                             method='bilinear')
         x_k = self.f_x(x)
-        
+
         if self.with_channel:
             sim_map = tf.math.sigmoid(self.up(x_k * y_q))
         else:
-            sim_map = tf.math.sigmoid(tf.reduce_sum(x_k * y_q, dim=1).unsqueeze(1))
+            sim_map = tf.math.sigmoid(tf.expand_dims(tf.reduce_sum(x_k * y_q, axis=3), 3))
         
-        y = tf.image.resize(y, size=[input_size[2], input_size[3]],
+        y = tf.image.resize(y, size=[input_size[1], input_size[2]],
                             method='bilinear')
-        x = (1-sim_map)*x + sim_map*y
+
+        x = (1 - sim_map) * x + sim_map * y
         
         return x
     
@@ -381,10 +381,11 @@ class Bag(tf.Module):
     
 
 
-# if __name__ == '__main__':
-#     x = tf.random.normal(4, 64, 32, 64)
-#     y = tf.random.normal(4, 64, 32, 64)
-#     z = tf.random.normal(4, 64, 32, 64)
-#     net = PagFM(64, 16, with_channel=True)
+if __name__ == '__main__':
+    x = tf.random.normal((4, 64, 32, 64))
+    y = tf.random.normal((4, 64, 32, 64))
+    z = tf.random.normal((4, 64, 32, 64))
+    net = PagFM(64, 16, with_channel=True)
     
-#     out = net(x,y)
+    out = net(x, y)
+    print("\n out :", out)

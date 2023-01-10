@@ -10,7 +10,7 @@ from model_utils import BasicBlock, Bottleneck, segmenthead, DAPPM, PAPPM, PagFM
 
 
 class PIDNet(tf.Module):
-    def __init__(self, m=2, n=3, img_size=[1024, 2048], num_classes=19, planes=64, ppm_planes=96, head_planes=128, augment=True):
+    def __init__(self, m=2, n=3, img_size=[1024, 2048], num_classes=19, planes=32, ppm_planes=96, head_planes=128, augment=True):
         super(PIDNet, self).__init__()
         self.img_size = img_size
         self.num_classes = num_classes
@@ -131,8 +131,8 @@ class PIDNet(tf.Module):
         return layer
         
     def __call__(self, x):
-        width_output = x.shape[-1] // 8
-        height_output = x.shape[-2] // 8
+        width_output = x.shape[-2] // 8
+        height_output = x.shape[-3] // 8
 
         x = self.conv1(x)
         x = self.relu(self.layer1(x))
@@ -181,7 +181,7 @@ if __name__ == "__main__":
 
     model = PIDNet()
     # with tf.stop_gradient():
-    input_shape = (4, 28, 28, 3)
+    input_shape = (4, 1024, 2048, 3)
     x = tf.random.normal(input_shape)
     print(model)
 
