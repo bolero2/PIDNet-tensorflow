@@ -97,9 +97,11 @@ class segmenthead(tf.Module):
         super(segmenthead, self).__init__()
         self.bn1 = BatchNorm(momentum=BN_MOM)
         self.conv1 = Conv2D(interplanes, kernel_size=3, padding='same', use_bias=False)
+
         self.bn2 = BatchNorm(momentum=BN_MOM)
-        self.relu = ReLU()
         self.conv2 = Conv2D(outplanes, kernel_size=1, padding='valid', use_bias=True)
+
+        self.relu = ReLU()
         self.scale_factor = scale_factor
 
     def __call__(self, x):
@@ -369,14 +371,13 @@ class Bag(tf.Module):
         self.conv = Sequential([
                                 BatchNorm(),
                                 ReLU(),
-                                Conv2D(in_channels, out_channels, 
-                                          kernel_size=3, padding='same', use_bias=False)                  
+                                Conv2D(out_channels, kernel_size=3, padding='same', use_bias=False)                  
                                 ])
 
         
     def __call__(self, p, i, d):
         edge_att = tf.math.sigmoid(d)
-        return self.conv(edge_att*p + (1-edge_att)*i)
+        return self.conv(edge_att * p + (1 - edge_att)*i)
     
 
 

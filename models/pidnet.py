@@ -143,8 +143,13 @@ class PIDNet(tf.Module):
         x_d = self.layer3_d(x)
 
         x = self.relu(self.layer3(x))
+
         x_ = self.pag3(x_, self.compression3(x))
-        x_d = x_d + tf.image.resize(self.diff3(x), size=[height_output, width_output], method='bilinear')
+        x_d = x_d + tf.image.resize(
+            self.diff3(x),
+            size=[height_output, width_output],
+            method='bilinear'
+        )
 
         if self.augment:
             temp_p = x_
@@ -154,7 +159,11 @@ class PIDNet(tf.Module):
         x_d = self.layer4_d(self.relu(x_d))
 
         x_ = self.pag4(x_, self.compression4(x))
-        x_d = x_d + tf.image.resize(self.diff4(x), size=[height_output, width_output], method='bilinear')
+        x_d = x_d + tf.image.resize(
+            self.diff4(x),
+            size=[height_output, width_output],
+            method='bilinear'
+        )
         
         if self.augment:
             temp_d = x_d
@@ -162,9 +171,13 @@ class PIDNet(tf.Module):
         x_ = self.layer5_(self.relu(x_))
         x_d = self.layer5_d(self.relu(x_d))
 
-        x = tf.image.resize(self.spp(self.layer5(x)), size=[height_output, width_output], method='bilinear')
+        x = tf.image.resize(
+            self.spp(self.layer5(x)),
+            size=[height_output, width_output],
+            method='bilinear'
+        )
 
-        x = self.final_layer(self.dfm(x_, x, x_d))
+        x_ = self.final_layer(self.dfm(x_, x, x_d))
 
         if self.augment:
             x_extra_p = self.seghead_p(temp_p)
