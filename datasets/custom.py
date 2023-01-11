@@ -1,3 +1,4 @@
+import tensorflow as tf
 from tensorflow.keras.utils import Sequence
 import math
 import numpy as np
@@ -31,7 +32,7 @@ class CustomDataset(Sequence):
                  mode=''
                 ):
 
-        assert mode in ['train', 'valid', 'test']
+        # assert mode in ['train', 'valid', 'test']
         self.mode = mode
 
         self.config = config
@@ -67,30 +68,40 @@ class CustomDataset(Sequence):
         index 번 째의 batch_size 만큼을 return해줘야 함.
         """
         indices = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
-        imagepaths = [os.path.join(self.image_prefix, f"{self.datapack[x]}.{IMAGE_EXT}") for x in indices]
-        labelpaths = [os.path.join(self.label_prefix, f"{self.datapack[x]}.{LABEL_EXT}") for x in indices]
+        image_paths = [os.path.join(self.image_prefix, f"{self.datapack[x]}.{IMAGE_EXT}") for x in indices]
+        label_paths = [os.path.join(self.label_prefix, f"{self.datapack[x]}.{LABEL_EXT}") for x in indices]
+        x_list, y_list, edge_list, size_list = [], [], [], []
 
-        for imgfile in imagepaths:
+        for imgfile, labelfile in zip(image_paths, label_paths):
             assert os.path.isfile(imgfile)
             x = Image.open(imgfile).convert("RGB")
             x = x.resize(self.reshape_size)
             x = np.array(x)
             size = x.shape
 
-        for labelfile in labelpaths:
             assert os.path.isfile(labelfile)
             y = Image.open(labelfile)
             y = y.resize(self.reshape_size)
             y = np.array(y)
 
-        image, label, edge = self.gen_sample(x, y, 
-                                self.multi_scale, self.flip, edge_pad=False,
-                                edge_size=self.bd_dilate_size)
-        _image = image.copy()
-        _label = label.copy()
-        _edge = edge.copy()
+            image, label, edge = self.gen_sample(x, y, 
+                                    self.multi_scale, self.flip, edge_pad=False,
+                                    edge_size=self.bd_dilate_size)
+            _image = image.copy()
+            _label = label.copy()
+            _edge = edge.copy()
 
-        return _image, _label, _edge, np.array(size), [self.datapack[x] for x in indices]
+            x_list.append(_image)
+            y_list.append(_label)
+            edge_list.append(_edge)
+            size_list.append(size)
+
+        image_tensor = tf.convert_to_tensor(x_list)
+        label_tensor = tf.convert_to_tensor(y_list)
+        edge_tensor = tf.convert_to_tensor(edge_list)
+
+        # return _image, _label, _edge, np.array(size_list), [self.datapack[x] for x in indices]
+        return image_tensor, label_tensor, edge_tensor, np.array(size_list), [self.datapack[x] for x in indices]
 
     def on_epoch_end(self):
         self.indices = np.arange(len(self.datapack))
@@ -114,7 +125,7 @@ class CustomDataset(Sequence):
 
         image = self.input_transform(image)
         label = self.label_transform(label)
-        image = image.transpose((2, 0, 1))
+        # image = image.transpose((2, 0, 1))
 
         if is_flip:
             flip = np.random.choice(2) * 2 - 1
