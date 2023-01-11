@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------
 import tensorflow as tf
 import numpy as np
-from tensorflow.keras.losses import CategoricalCrossentropy, BinaryCrossentropy
+from tensorflow.keras.losses import CategoricalCrossentropy, SparseCategoricalCrossentropy, BinaryCrossentropy
 from tensorflow.keras.layers import Softmax
 from tensorflow.experimental.numpy import ascontiguousarray
 from configs import config
@@ -13,30 +13,28 @@ class CrossEntropy(tf.Module):
     def __init__(self, ignore_label=-1, weight=None):
         super(CrossEntropy, self).__init__()
         self.ignore_label = ignore_label
-        self.criterion = CategoricalCrossentropy(
-            sample_weight=weight
-        )
+        self.weight = weight
+        self.criterion = SparseCategoricalCrossentropy()
 
-    def _forward(self, score, target):
-
-        loss = self.criterion(score, target)
+    def _forward(self, y_true, y_pred):
+        y_true = tf.cast(y_true, tf.float32)
+        loss = self.criterion(y_true, y_pred).numpy()
 
         return loss
 
-    def forward(self, score, target):
-
+    def __call__(self, y_true, y_pred):
         if config.MODEL.NUM_OUTPUTS == 1:
-            score = [score]
+            y_pred = [y_pred]
 
         balance_weights = config.LOSS.BALANCE_WEIGHTS
         sb_weights = config.LOSS.SB_WEIGHTS
-        if len(balance_weights) == len(score):
-            return sum([w * self._forward(x, target) for (w, x) in zip(balance_weights, score)])
-        elif len(score) == 1:
-            return sb_weights * self._forward(score[0], target)
+        if len(balance_weights) == len(y_pred):
+            return sum([w * self._forward(y_true, x) for (w, x) in zip(balance_weights, y_pred)])
+        elif len(y_pred) == 1:
+            return sb_weights * self._forward(y_true, y_pred[0])
         
         else:
-            raise ValueError("lengths of prediction and target are not identical!")
+            raise ValueError("lengths of prediction and y_true are not identical!")
 
         
 
@@ -66,7 +64,7 @@ class OhemCrossEntropy(tf.Module):
         # print("\n\nPRED 1:", pred.shape)
         
         pixel_losses = tf.reshape(ascontiguousarray(self.criterion(score, target)), -1)
-        mask = target.contiguous().view(-1) != self.ignore_label
+        mask = tf.reshape(ascontiguousarray(target), -1) != self.ignore_label
         # print("Mask:", mask)
         # print("Mask:", np.unique(mask.detach().cpu().numpy()))
 
@@ -88,7 +86,7 @@ class OhemCrossEntropy(tf.Module):
         pixel_losses = pixel_losses[pred < threshold]
         return pixel_losses.mean()
 
-    def forward(self, score, target):
+    def __call__(self, score, target):
         
         if not (isinstance(score, list) or isinstance(score, tuple)):
             score = [score]
@@ -111,17 +109,21 @@ class OhemCrossEntropy(tf.Module):
 
 
 def weighted_bce(bd_pre, target):
-    n, c, h, w = bd_pre.size()
-    log_p = bd_pre.permute(0, 2, 3, 1).contiguous().view(1, -1)
-    target_t = target.view(1, -1)
+    n, c, h, w = tuple(bd_pre.shape)
+    # log_p = bd_pre.permute(0, 2, 3, 1).contiguous().view(1, -1)
+    log_p = tf.reshape(ascontiguousarray(bd_pre), (1, -1))
+    target_t = tf.reshape(target, (1, -1))
 
     pos_index = (target_t == 1)
     neg_index = (target_t == 0)
 
     weight = tf.zeros_like(log_p)
-    pos_num = pos_index.sum()
-    neg_num = neg_index.sum()
+    pos_num = np.sum(pos_index)#.sum()
+    neg_num = np.sum(neg_index)#.sum()
+    print("pos_num :", pos_num)
+    print("neg_num :", neg_num)
     sum_num = pos_num + neg_num
+    print(sum_num)
     weight[pos_index] = neg_num * 1.0 / sum_num
     weight[neg_index] = pos_num * 1.0 / sum_num
 
@@ -135,7 +137,8 @@ class BondaryLoss(tf.Module):
         super(BondaryLoss, self).__init__()
         self.coeff_bce = coeff_bce
         
-    def forward(self, bd_pre, bd_gt):
+    def __call__(self, bd_pre, bd_gt):
+        print(bd_pre, bd_gt)
 
         bce_loss = self.coeff_bce * weighted_bce(bd_pre, bd_gt)
         loss = bce_loss
