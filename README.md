@@ -16,6 +16,73 @@ To alleviate this issue, we propose a novel three- branch network architecture: 
 
 Especially, PIDNet-S achieves 78.6% mIOU with inference speed of 93.2 FPS on Cityscapes test set and 80.1% mIOU with speed of 153.7 FPS on CamVid test set.
 
+## Model.summary()
+
+```plain
+Model: "pid_net"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ re_lu (ReLU)                (None, 168, 96, 32)       0         
+                                                                 
+ conv1 (Sequential)          (None, 84, 48, 32)        10400     
+                                                                 
+ made_layer_ (Sequential)    (None, 84, 48, 32)        37376     
+                                                                 
+ made_layer_ (Sequential)    (None, 42, 24, 64)        132352    
+                                                                 
+ made_layer_ (Sequential)    (None, 21, 12, 128)       822784    
+                                                                 
+ made_layer_ (Sequential)    (None, 11, 6, 256)        3283968   
+                                                                 
+ made_layer_ (Sequential)    (None, 6, 3, 512)         1779712   
+                                                                 
+ compression3 (Sequential)   (None, 21, 12, 64)        8448      
+                                                                 
+ compression4 (Sequential)   (None, 11, 6, 64)         16640     
+                                                                 
+ pag_fm (PagFM)              multiple                  4352      
+                                                                 
+ pag_fm_1 (PagFM)            multiple                  4352      
+                                                                 
+ made_layer_layer3_ (Sequent  (None, 42, 24, 64)       148480    
+ ial)                                                            
+                                                                 
+ made_layer_layer4_ (Sequent  (None, 42, 24, 64)       148480    
+ ial)                                                            
+                                                                 
+ made_layer_layer5_ (Sequent  (None, 42, 24, 128)      113152    
+ ial)                                                            
+                                                                 
+ basic_block_14 (BasicBlock)  multiple                 30080     
+                                                                 
+ made_layer_layer4_d (Sequen  (None, 42, 24, 64)       15104     
+ tial)                                                           
+                                                                 
+ diff3 (Sequential)          (None, 21, 12, 32)        36992     
+                                                                 
+ diff4 (Sequential)          (None, 11, 6, 64)         147712    
+                                                                 
+ pappm (PAPPM)               multiple                  720256    
+                                                                 
+ light__bag (Light_Bag)      multiple                  33792     
+                                                                 
+ made_layer_layer5_d (Sequen  (None, 42, 24, 128)      58880     
+ tial)                                                           
+                                                                 
+ segmenthead (segmenthead)   multiple                  74883     
+                                                                 
+ segmenthead_1 (segmenthead)  multiple                 18849     
+                                                                 
+ segmenthead_2 (segmenthead)  multiple                 148867    
+                                                                 
+=================================================================
+Total params: 7,795,911
+Trainable params: 7,770,567
+Non-trainable params: 25,344
+_________________________________________________________________
+```
+
 ## Images 
 
 ### Model Architecture
