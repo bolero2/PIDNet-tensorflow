@@ -34,6 +34,8 @@ from datetime import datetime
 import pickle
 
 _GPUS = tf.config.experimental.list_physical_devices('GPU')
+print("GPU Devices ? :", _GPUS)
+# tf.debugging.set_log_device_placement(True)
 
 
 def parse_args():
@@ -146,7 +148,7 @@ def main():
                                 crop_size=crop_size,
                                 reshape_size=reshape_size,
                                 scale_factor=config.TRAIN.SCALE_FACTOR,
-                                mode='train')
+                                mode='')
 
     valid_crop_size = (config.TEST.IMAGE_SIZE[1], config.TEST.IMAGE_SIZE[0])
     valid_reshape_size = (config.TEST.IMAGE_SIZE[0], config.TEST.IMAGE_SIZE[1])
@@ -159,15 +161,53 @@ def main():
                                 base_size=config.TRAIN.BASE_SIZE,
                                 crop_size=valid_crop_size,
                                 reshape_size=valid_reshape_size,
-                                mode='valid')
+                                mode='')
 
-    # if config.TRAIN.OPTIMIZER.lower() == 'sgd':
+    if config.TRAIN.OPTIMIZER.lower() == 'sgd':
+        optimizer = tf.keras.optimizers.Adam()
+    elif config.TRAIN.OPTIMIZER.lower() == 'adam':
+        optimizer = tf.keras.optimizers.Adam()
+    else:
+        raise NotImplementedError
+
+    if config.LOSS.USE_OHEM:
+        sem_criterion = OhemCrossEntropy(
+            ignore_label=config.TRAIN.IGNORE_LABEL,
+            thres=config.LOSS.OHEMTHRES,
+            min_kept=config.LOSS.OHEMKEEP,
+    )
+    else:
+        sem_criterion = CrossEntropy(
+            ignore_label=config.TRAIN.IGNORE_LABEL,
+            # weight=train_dataset.class_weights
+        )
+    bd_criterion = BondaryLoss()
 
     for epoch in range(start_epoch, end_epoch):
         for step, data in enumerate(trainloader):
-            print(data)
+            images, labels, edges, sizes, names = data
+            loss_s, loss_b = np.nan, np.nan
 
+            with tf.GradientTape() as tape:
+                # with tf.device('/GPU:0'):
+                # images = tf.cast(images, tf.float32)
+                # labels = tf.cast(labels, tf.int8)
+                # edges = tf.cast(edges, tf.int8)
 
+                outputs = model(images)
+
+                h, w = labels.shape[1], labels.shape[2]
+                ph, pw = outputs[0].shape[1], outputs[0].shape[2]
+                if ph != h or pw != w:
+                    for i in range(len(outputs)):
+                        outputs[i] = tf.image.resize(outputs[i], size=(h, w), method='bilinear')
+
+                loss_s = sem_criterion(labels, outputs[:-1])
+                # loss_b = bd_criterion(outputs[-1], edges)
+                print("Loss sem :", loss_s)
+                # print("Loss boundary :", loss_b)
+            gradient = tape.gradient(loss_s, model.trainable_weights)
+            optimizer.apply_gradients(zip(gradient, model.trainable_weights))
 
 if __name__ == '__main__':
     try:
