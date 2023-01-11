@@ -13,7 +13,7 @@ np_config.enable_numpy_behavior()
 BN_MOM = 0.1
 ALGC = False
 
-class BasicBlock(tf.Module):
+class BasicBlock(tf.keras.Model):
     expansion = 1
 
     def __init__(self, inplanes, planes, strides=1, downsample=None, no_relu=False):
@@ -29,7 +29,7 @@ class BasicBlock(tf.Module):
         self.strides = strides
         self.no_relu = no_relu
 
-    def __call__(self, x):
+    def call(self, x):
         residual = x
 
         out = self.conv1(x)
@@ -49,7 +49,7 @@ class BasicBlock(tf.Module):
         else:
             return self.relu(out)
 
-class Bottleneck(tf.Module):
+class Bottleneck(tf.keras.Model):
     expansion = 2
 
     def __init__(self, inplanes, planes, strides=1, downsample=None, no_relu=True):
@@ -68,7 +68,7 @@ class Bottleneck(tf.Module):
         self.strides = strides
         self.no_relu = no_relu
 
-    def __call__(self, x):
+    def call(self, x):
         residual = x
 
         out = self.conv1(x)
@@ -91,7 +91,7 @@ class Bottleneck(tf.Module):
         else:
             return self.relu(out)
 
-class segmenthead(tf.Module):
+class segmenthead(tf.keras.Model):
 
     def __init__(self, inplanes, interplanes, outplanes, scale_factor=None):
         super(segmenthead, self).__init__()
@@ -104,7 +104,7 @@ class segmenthead(tf.Module):
         self.relu = ReLU()
         self.scale_factor = scale_factor
 
-    def __call__(self, x):
+    def call(self, x):
         
         x = self.conv1(self.relu(self.bn1(x)))
         out = self.conv2(self.relu(self.bn2(x)))
@@ -117,7 +117,7 @@ class segmenthead(tf.Module):
 
         return out
 
-class DAPPM(tf.Module):
+class DAPPM(tf.keras.Model):
     def __init__(self, inplanes, branch_planes, outplanes):
         super(DAPPM, self).__init__()
         BN_MOM = 0.1
@@ -177,7 +177,7 @@ class DAPPM(tf.Module):
                                     Conv2D(outplanes, kernel_size=1, use_bias=False),
                                     ])
 
-    def __call__(self, x):
+    def call(self, x):
         width = x.shape[-2]
         height = x.shape[-3]        
         x_list = []
@@ -199,7 +199,7 @@ class DAPPM(tf.Module):
         out = self.compression(tf.concat(x_list, 1)) + self.shortcut(x)
         return out 
     
-class PAPPM(tf.Module):
+class PAPPM(tf.keras.Model):
     def __init__(self, inplanes, branch_planes, outplanes):
         super(PAPPM, self).__init__()
         BN_MOM = 0.1
@@ -254,7 +254,7 @@ class PAPPM(tf.Module):
                                 ])
 
 
-    def __call__(self, x):
+    def call(self, x):
         width = x.shape[-2]
         height = x.shape[-3]        
         scale_list = []
@@ -274,7 +274,7 @@ class PAPPM(tf.Module):
         return out
     
 
-class PagFM(tf.Module):
+class PagFM(tf.keras.Model):
     def __init__(self, in_channels, mid_channels, after_relu=False, with_channel=False):
         super(PagFM, self).__init__()
         self.with_channel = with_channel
@@ -295,7 +295,7 @@ class PagFM(tf.Module):
         if after_relu:
             self.relu = ReLU()
         
-    def __call__(self, x, y):
+    def call(self, x, y):
         input_size = x.shape
 
         if self.after_relu:
@@ -319,7 +319,7 @@ class PagFM(tf.Module):
         
         return x
     
-class Light_Bag(tf.Module):
+class Light_Bag(tf.keras.Model):
     def __init__(self, in_channels, out_channels):
         super(Light_Bag, self).__init__()
         self.conv_p = Sequential([
@@ -331,7 +331,7 @@ class Light_Bag(tf.Module):
                                     BatchNorm()
                                 ])
         
-    def __call__(self, p, i, d):
+    def call(self, p, i, d):
         edge_att = tf.math.sigmoid(d)
         
         p_add = self.conv_p((1-edge_att)*i + p)
@@ -340,7 +340,7 @@ class Light_Bag(tf.Module):
         return p_add + i_add
     
 
-class DDFMv2(tf.Module):
+class DDFMv2(tf.keras.Model):
     def __init__(self, in_channels, out_channels):
         super(DDFMv2, self).__init__()
         self.conv_p = Sequential([
@@ -356,7 +356,7 @@ class DDFMv2(tf.Module):
                                     BatchNorm()
                                 ])
         
-    def __call__(self, p, i, d):
+    def call(self, p, i, d):
         edge_att = tf.math.sigmoid(d)
         
         p_add = self.conv_p((1-edge_att)*i + p)
@@ -364,7 +364,7 @@ class DDFMv2(tf.Module):
         
         return p_add + i_add
 
-class Bag(tf.Module):
+class Bag(tf.keras.Model):
     def __init__(self, in_channels, out_channels):
         super(Bag, self).__init__()
 
@@ -375,7 +375,7 @@ class Bag(tf.Module):
                                 ])
 
         
-    def __call__(self, p, i, d):
+    def call(self, p, i, d):
         edge_att = tf.math.sigmoid(d)
         return self.conv(edge_att * p + (1 - edge_att)*i)
     

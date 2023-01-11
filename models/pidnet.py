@@ -9,9 +9,9 @@ import logging
 from .model_utils import BasicBlock, Bottleneck, segmenthead, DAPPM, PAPPM, PagFM, Bag, Light_Bag
 
 
-class PIDNet(tf.Module):
+class PIDNet(tf.keras.Model):
     def __init__(self, m=2, n=3, img_size=[1024, 2048], num_classes=19, planes=32, ppm_planes=96, head_planes=128, augment=True):
-        super(PIDNet, self).__init__()
+        super().__init__()
         self.img_size = img_size
         self.num_classes = num_classes
 
@@ -130,7 +130,7 @@ class PIDNet(tf.Module):
 
         return layer
         
-    def __call__(self, x):
+    def call(self, x):
         width_output = x.shape[-2] // 8
         height_output = x.shape[-3] // 8
 
