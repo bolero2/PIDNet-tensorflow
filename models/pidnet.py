@@ -33,7 +33,7 @@ class PIDNet(tf.keras.Model):
             Conv2D(self.planes, kernel_size=3, strides=2, padding='same'),
             BatchNorm(momentum=self.bn_mom),
             self.relu,
-        ])
+        ], name='conv1')
 
         self.layer1 = self._make_layer(BasicBlock, self.planes, self.planes, m)
         self.layer2 = self._make_layer(BasicBlock, self.planes, self.planes * 2, m, strides=2)
@@ -45,32 +45,32 @@ class PIDNet(tf.keras.Model):
         self.compression3 = Sequential([
             Conv2D(self.planes * 2, kernel_size=1, use_bias=False),
             BatchNorm(momentum=self.bn_mom)
-        ])
+        ], name='compression3')
 
         self.compression4 = Sequential([
             Conv2D(self.planes * 2, kernel_size=1, use_bias=False),
             BatchNorm(momentum=self.bn_mom)
-        ])
+        ], name='compression4')
 
         self.pag3 = PagFM(self.planes * 2, self.planes)
         self.pag4 = PagFM(self.planes * 2, self.planes)
 
-        self.layer3_ = self._make_layer(BasicBlock, self.planes * 2, self.planes * 2, m)
-        self.layer4_ = self._make_layer(BasicBlock, self.planes * 2, self.planes * 2, m)
-        self.layer5_ = self._make_layer(Bottleneck, self.planes * 2, self.planes * 2, m)
+        self.layer3_ = self._make_layer(BasicBlock, self.planes * 2, self.planes * 2, m, name='layer3_')
+        self.layer4_ = self._make_layer(BasicBlock, self.planes * 2, self.planes * 2, m, name='layer4_')
+        self.layer5_ = self._make_layer(Bottleneck, self.planes * 2, self.planes * 2, m, name='layer5_')
 
         # D branch
         if m == 2:
             self.layer3_d = self._make_single_layer(BasicBlock, self.planes * 2, self.planes)
-            self.layer4_d = self._make_layer(Bottleneck, self.planes, self.planes, 1)
+            self.layer4_d = self._make_layer(Bottleneck, self.planes, self.planes, 1, name='layer4_d')
             self.diff3 = Sequential([
                 Conv2D(self.planes, kernel_size=3, padding='same', use_bias=False),
                 BatchNorm(momentum=self.bn_mom)
-            ])
+            ], name='diff3')
             self.diff4 = Sequential([
                 Conv2D(self.planes * 2, kernel_size=3, padding='same', use_bias=False),
                 BatchNorm(momentum=self.bn_mom)
-            ])
+            ], name='diff4')
             self.spp = PAPPM(self.planes * 16, self.ppm_planes, self.planes * 4)
             self.dfm = Light_Bag(self.planes * 4, self.planes * 4)
 
@@ -80,15 +80,15 @@ class PIDNet(tf.keras.Model):
             self.diff3 = Sequential([
                                     Conv2D(self.planes * 2, kernel_size=3, padding='same', use_bias=False),
                                     BatchNorm(momentum=self.bn_mom),
-                                    ])
+                                    ], name='diff3')
             self.diff4 = Sequential([
                                     Conv2D(self.planes * 2, kernel_size=3, padding='same', use_bias=False),
                                     BatchNorm(momentum=self.bn_mom),
-                                    ])
+                                    ], name='diff4')
             self.spp = DAPPM(self.planes * 16, self.ppm_planes, self.planes * 4)
             self.dfm = Bag(self.planes * 4, self.planes * 4)
 
-        self.layer5_d = self._make_layer(Bottleneck, self.planes * 2, self.planes * 2, 1)
+        self.layer5_d = self._make_layer(Bottleneck, self.planes * 2, self.planes * 2, 1, name='layer5_d')
 
         # Prediction head
         if self.augment:
@@ -97,14 +97,14 @@ class PIDNet(tf.keras.Model):
 
         self.final_layer = segmenthead(self.planes * 4, self.head_planes, self.num_classes)
 
-    def _make_layer(self, block, inplanes, planes, blocks, strides=1):
+    def _make_layer(self, block, inplanes, planes, blocks, strides=1, name=''):
         downsample = None
 
         if strides != 1 or inplanes != planes * block.expansion:
             downsample = Sequential([
                 Conv2D(planes * block.expansion, kernel_size=1, strides=strides, use_bias=False),
                 BatchNorm(momentum=self.bn_mom)
-            ])
+            ], name='downsampled_made_layer')
 
         layers = []
         layers.append(block(inplanes, planes, strides, downsample))
@@ -115,16 +115,16 @@ class PIDNet(tf.keras.Model):
             else:
                 layers.append(block(inplanes, planes, strides=1, no_relu=False))
 
-        return Sequential(layers)
+        return Sequential(layers, name=f'made_layer_{name}')
 
-    def _make_single_layer(self, block, inplanes, planes, strides=1):
+    def _make_single_layer(self, block, inplanes, planes, strides=1, name=''):
         downsample = None
 
         if strides != 1 or inplanes != planes * block.expansion:
             downsample = Sequential([
                 Conv2D(planes * block.expansion, kernel_size=1, strides=strides, use_bias=False),
                 BatchNorm(momentum=self.bn_mom)
-            ])
+            ], name='downsampled_single_layer')
 
         layer = block(inplanes, planes, strides, downsample, no_relu=True)
 
